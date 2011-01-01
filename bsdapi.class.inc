@@ -25,8 +25,8 @@ class BSD_API {
   public function __construct(){
     // store vars requied by BSD API
     $this->http_request_base = variable_get('bsdapi_url', ''); //'http://socialcontxt.bsdtoolsdemo.com/page/api/';
-    $this->api_id = variable_get('bsdapi_key', ''); //'activ8'
-    $this->api_secret = variable_get('bsdapi_secret', ''); //'98d5dcb47e25a9af48da0234920f146fe1d2825c'
+    $this->api_id = variable_get('bsdapi_key', ''); 
+    $this->api_secret = variable_get('bsdapi_secret', '');  
     
 
     // set deferred result defaults
