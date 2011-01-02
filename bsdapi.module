@@ -26,11 +26,10 @@ function bsdapi_menu() {
 }
 
 function bsdapi_call(){
-  dpm($_REQUEST);
+  //dpm($_REQUEST);
   module_load_include('inc', 'bsdapi', 'bsdapi.class');
 
-  $obj = new BSD_API();
-  $obj -> callApi('cons/get_constituents_by_id', array('cons_ids'=> '1'));
-  //$obj -> callApi('cons/get_updated_constituents', array('changed_since'=> '1179856723'));
-  return 'sdfds';
+  $obj = new BsdApi();
+  return $obj -> request('cons/get_constituents_by_id', array('cons_ids'=> '1'));
+
 }

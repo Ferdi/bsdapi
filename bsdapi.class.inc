@@ -1,6 +1,6 @@
 <?php
 
-class BSD_API {
+class BsdApi {
   
   var $api_id;
   var $api_secret;
@@ -28,13 +28,10 @@ class BSD_API {
     $this->api_id = variable_get('bsdapi_key', ''); 
     $this->api_secret = variable_get('bsdapi_secret', '');  
     
-
     // set deferred result defaults
+    $this->deferred_result_call_interval = variable_get('deferred_result_call_interval', '5'); // in seconds
+    $this->deferred_result_call_max_attempts = variable_get('deferred_result_call_max_attempts', '20'); 
     
-
-    // *these are sample values and may be modified as you see fit*
-    $this->deferred_result_call_interval = 30; // in seconds
-    $this->deferred_result_call_max_attempts = 20;
     
     $this->output_format = self::OUTPUT_40CHARHEX;
     
@@ -46,7 +43,7 @@ class BSD_API {
     );
   }
 
-  public function callApi($url, $query_params = array()){
+  public function request($url, $query_params = array()){
     // prepend URL with base path for the API
     $url = $this->http_request_base . $url;
     
@@ -62,30 +59,16 @@ class BSD_API {
     $query_params['api_mac'] = $this->_buildApiMac($url, $query_params);
     
     $url .= '?';
-    $d = array();
-    foreach ( $query_params as $key => $value ) {
-      $d[] = $key . '=' . $value;
-    }
-    $url .= implode('&', $d);
+    $url .= $this->_attrs_to_query($query_params);
     
-    /*
-    $api_ver = 1;
-    $api_id = "activ8";
-    $api_ts = time();
-    $api_call = "/page/api/cons/get_constituents_by_id";
-    $api_params = "cons_ids=1&api_ver=" . $api_ver . "&api_id=" . $api_id . "&api_ts=" . $api_ts;
-    $api_secret = "98d5dcb47e25a9af48da0234920f146fe1d2825c";
-    
-    $signing_string = $api_id . "\n" . $api_ts . "\n" . $api_call . "\n" . $api_params;
-    
-    $api_mac = hash_hmac('sha1', $signing_string, $api_secret);
-    
-    $url = "http://socialcontxt.bsdtoolsdemo.com" . $api_call . "?" . $api_params . "&api_mac=" . $api_mac;
-    */
-
     $result = drupal_http_request($url, $this->http_request_options);
-    dpm($result);
-    return;
+    
+    // is this a deferred result?
+    if ($result->code == self::HTTP_CODE_DEFERRED_RESULT) {
+      $result = $this->_deferredResult($result->data);
+    }
+    //dpm($result);
+    return $result->data;
   }
 
   /**
@@ -102,13 +85,8 @@ class BSD_API {
 
     // build query string from given parameters
     // $query_string = urldecode(http_build_query($query_params));  // does NOT work
-    // Instead ..
-    $d = array();
-    foreach ( $query_params as $key => $value ) {
-      $d[] = $key . '=' . $value;
-    }
-    
-    $query_string = implode('&', $d);
+    // Instead ..    
+    $query_string = $this -> _attrs_to_query($query_params);
 
     // combine strings to build the signing string
     $signing_string = $query_params['api_id'] . "\n" . $query_params['api_ts'] . "\n" . $url_parts['path'] . "\n" . $query_string;
@@ -133,23 +111,23 @@ class BSD_API {
       sleep($this->deferred_result_call_interval);
       
       // check to see if result is ready
-      $req = $this->callApi('get_deferred_results', array(
+      $req = $this->request('get_deferred_results', array(
           'deferred_id' => $deferred_id 
       ));
       
       // increment attempts counter
       $attempt ++;
-    } while ( $req->getResponseCode() == self::HTTP_CODE_DEFERRED_RESULT_COMPILING && $attempt < $this->deferred_result_call_max_attempts );
+    } while ( $req->code == self::HTTP_CODE_DEFERRED_RESULT_COMPILING && $attempt < $this->deferred_result_call_max_attempts );
     
     // if the response code isn't HTTP_CODE_OK then we didn't get the result we wanted
-    if ($req->getResponseCode() != self::HTTP_CODE_OK) {
+    if ($req->code != self::HTTP_CODE_OK) {
       // did we go over our "max attempts"?
       if ($iteration >= $this->deferred_result_call_max_attempts) {
         throw new Exception('Could not retrieve deferred result.  Max attempts reached.', 1);
       }
       // we must have received an unexpected HTTP code
       else {
-        throw new Exception('Could not retrieve deferred result.  HTTP Code ' . $req->getResponseCode() . ' was returned, with the following message: ' . $req->getResponseBody(), 2);
+        throw new Exception('Could not retrieve deferred result.  HTTP Code ' . $req->code . '  was returned, with the following message: ' . $req->data, 2);
       }
     }
     
@@ -163,6 +141,15 @@ class BSD_API {
       $raw .= chr(hexdec(substr($str, $i, 2)));
     }
     return base64_encode($raw);
+  }
+  
+  protected function _attrs_to_query($attrs){
+    $d = array();
+    foreach ( $attrs as $key => $value ) {
+      $d[] = $key . '=' . $value;
+    }
+    
+    return implode('&', $d);
   }
 
 }

@@ -33,5 +33,17 @@ function bsdapi_settings_form() {
 	'#required'  => TRUE,
   );
   
+   $form['bsdapi']['deferred_result_call_interval'] = array(
+    '#default_value' => variable_get('deferred_result_call_interval', '30'),
+    '#title'         => t('Deferred call interval in seconds'),
+    '#type'          => 'textfield',
+  );
+  
+   $form['bsdapi']['deferred_result_call_max_attempts'] = array(
+    '#default_value' => variable_get('deferred_result_call_max_attempts', '20'),
+    '#title'         => t('Max attempts for the deferred result calls'),
+    '#type'          => 'textfield',
+  );
+  
   return system_settings_form($form);
 }
