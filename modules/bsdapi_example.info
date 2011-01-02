@@ -1,0 +1,3 @@
+name = bsdapi example module
+description = Some example of using bsdapi module
+core = 6.x
