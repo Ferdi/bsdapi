@@ -14,22 +14,6 @@ function bsdapi_menu() {
     'access arguments' => array('administer site configuration'),
     'file' => 'bsdapi.admin.inc',
   );
-  
-  $items['bsd'] = array(
-    'title' => 'Blue State Digital API',
-    'page callback' => 'bsdapi_call',
-    
-    'access callback' => 'user_access',
-    'access arguments' => array('access content'),
-  );
+ 
   return $items;
-}
-
-function bsdapi_call(){
-  //dpm($_REQUEST);
-  module_load_include('inc', 'bsdapi', 'bsdapi.class');
-
-  $obj = new BsdApi();
-  return $obj -> request('cons/get_constituents_by_id', array('cons_ids'=> '1'));
-
 }

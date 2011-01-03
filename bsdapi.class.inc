@@ -25,20 +25,22 @@ class BsdApi {
   public function __construct(){
     // store vars requied by BSD API
     $this->http_request_base = variable_get('bsdapi_url', ''); //'http://socialcontxt.bsdtoolsdemo.com/page/api/';
-    $this->api_id = variable_get('bsdapi_key', ''); 
-    $this->api_secret = variable_get('bsdapi_secret', '');  
+    $this->api_id = variable_get('bsdapi_key', '');
+    $this->api_secret = variable_get('bsdapi_secret', '');
     
     // set deferred result defaults
     $this->deferred_result_call_interval = variable_get('deferred_result_call_interval', '5'); // in seconds
-    $this->deferred_result_call_max_attempts = variable_get('deferred_result_call_max_attempts', '20'); 
-    
+    $this->deferred_result_call_max_attempts = variable_get('deferred_result_call_max_attempts', '20');
     
     $this->output_format = self::OUTPUT_40CHARHEX;
     
     $this->http_request_options = array(
         'timeout' => 10, 
-        'readTimeout' => array(10, 0), 
-        'allowRedirects' => true, 
+        'readTimeout' => array(
+            10, 
+            0 
+        ), 
+        'allowRedirects' => true 
     );
   }
 
@@ -69,7 +71,7 @@ class BsdApi {
     //dpm($result);
     return $result;
   }
-  
+
   private function _deferredResult($deferred_id){
     $attempt = 0;
     
@@ -114,12 +116,12 @@ class BsdApi {
     // break URL into parts to get the path
     // i.e. "/page/api/cons/get_constituents_by_id"
     $url_parts = parse_url($url);
-
+    
     // build query string from given parameters
     // $query_string = urldecode(http_build_query($query_params));  // does NOT work
     // Instead ..    
-    $query_string = $this -> _attrs_to_query($query_params);
-
+    $query_string = $this->_attrs_to_query($query_params);
+    
     // combine strings to build the signing string
     $signing_string = $query_params['api_id'] . "\n" . $query_params['api_ts'] . "\n" . $url_parts['path'] . "\n" . $query_string;
     
@@ -134,8 +136,6 @@ class BsdApi {
   
   }
 
-
-
   protected function _hex2b64($str){
     $raw = '';
     for($i = 0; $i < strlen($str); $i += 2) {
@@ -143,7 +143,7 @@ class BsdApi {
     }
     return base64_encode($raw);
   }
-  
+
   protected function _attrs_to_query($attrs){
     $d = array();
     foreach ( $attrs as $key => $value ) {
