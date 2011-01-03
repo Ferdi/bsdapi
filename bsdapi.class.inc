@@ -39,11 +39,10 @@ class BsdApi {
         'timeout' => 10, 
         'readTimeout' => array(10, 0), 
         'allowRedirects' => true, 
-        'maxRedirects' => 3 
     );
   }
 
-  public function request($url, $query_params = array()){
+  public function request($url, $query_params = array(), $data = NULL){
     // prepend URL with base path for the API
     $url = $this->http_request_base . $url;
     
@@ -61,14 +60,47 @@ class BsdApi {
     $url .= '?';
     $url .= $this->_attrs_to_query($query_params);
     
-    $result = drupal_http_request($url, $this->http_request_options);
+    $result = drupal_http_request($url = $url, $headers = $this->http_request_options, $method = 'POST', $data = $data, $retry = 3);
     
     // is this a deferred result?
     if ($result->code == self::HTTP_CODE_DEFERRED_RESULT) {
       $result = $this->_deferredResult($result->data);
     }
     //dpm($result);
-    return $result->data;
+    return $result;
+  }
+  
+  private function _deferredResult($deferred_id){
+    $attempt = 0;
+    
+    // loop until result is ready or until we give up
+    do {
+      // delay between calls (in seconds)
+      sleep($this->deferred_result_call_interval);
+      
+      // check to see if result is ready
+      $req = $this->request('get_deferred_results', array(
+          'deferred_id' => $deferred_id 
+      ));
+      
+      // increment attempts counter
+      $attempt ++;
+    } while ( $req->code == self::HTTP_CODE_DEFERRED_RESULT_COMPILING && $attempt < $this->deferred_result_call_max_attempts );
+    
+    // if the response code isn't HTTP_CODE_OK then we didn't get the result we wanted
+    if ($req->code != self::HTTP_CODE_OK) {
+      // did we go over our "max attempts"?
+      if ($iteration >= $this->deferred_result_call_max_attempts) {
+        throw new Exception('Could not retrieve deferred result.  Max attempts reached.', 1);
+      }
+      // we must have received an unexpected HTTP code
+      else {
+        throw new Exception('Could not retrieve deferred result.  HTTP Code ' . $req->code . '  was returned, with the following message: ' . $req->data, 2);
+      }
+    }
+    
+    // return request result
+    return $req;
   }
 
   /**
@@ -102,38 +134,7 @@ class BsdApi {
   
   }
 
-  private function _deferredResult($deferred_id){
-    $attempt = 0;
-    
-    // loop until result is ready or until we give up
-    do {
-      // delay between calls (in seconds)
-      sleep($this->deferred_result_call_interval);
-      
-      // check to see if result is ready
-      $req = $this->request('get_deferred_results', array(
-          'deferred_id' => $deferred_id 
-      ));
-      
-      // increment attempts counter
-      $attempt ++;
-    } while ( $req->code == self::HTTP_CODE_DEFERRED_RESULT_COMPILING && $attempt < $this->deferred_result_call_max_attempts );
-    
-    // if the response code isn't HTTP_CODE_OK then we didn't get the result we wanted
-    if ($req->code != self::HTTP_CODE_OK) {
-      // did we go over our "max attempts"?
-      if ($iteration >= $this->deferred_result_call_max_attempts) {
-        throw new Exception('Could not retrieve deferred result.  Max attempts reached.', 1);
-      }
-      // we must have received an unexpected HTTP code
-      else {
-        throw new Exception('Could not retrieve deferred result.  HTTP Code ' . $req->code . '  was returned, with the following message: ' . $req->data, 2);
-      }
-    }
-    
-    // return request result
-    return $req;
-  }
+
 
   protected function _hex2b64($str){
     $raw = '';
