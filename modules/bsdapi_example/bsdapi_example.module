@@ -1,0 +1,212 @@
+<?php
+
+/**
+ * Implementation of hook_menu().
+ */
+function bsdapi_example_menu(){
+  $items = array();
+  
+  $items['bsdapi_examples'] = array(
+      'title' => 'Blue State Digital API examples', 
+      'page callback' => 'bsdapi_examples', 
+      
+      'access callback' => 'user_access', 
+      'access arguments' => array(
+          'access content' 
+      ), 
+      'type' => MENU_CALLBACK 
+  );
+  
+  $items['bsdapi_examples/set_constituent_data'] = array(
+      'title' => 'Blue State Digital API examples - set_constituent_data', 
+      'page callback' => 'drupal_get_form', 
+      'page arguments' => array(
+          'bsdapi_examples_set_constituent_data_form' 
+      ), 
+      
+      'access callback' => 'user_access', 
+      'access arguments' => array(
+          'access content' 
+      ), 
+      'type' => MENU_CALLBACK 
+  );
+  
+  $items['bsdapi_examples/get_constituents_by_id/%'] = array(
+      'title' => 'Blue State Digital API examples - bsdapi_examples/get_constituents_by_id', 
+      'page callback' => 'bsdapi_examples_get_constituents_by_id', 
+      'page arguments' => array(
+          2 
+      ), 
+      
+      'access callback' => 'user_access', 
+      'access arguments' => array(
+          'access content' 
+      ), 
+      'type' => MENU_CALLBACK 
+  );
+  
+  $items['bsdapi_examples/get_constituents'] = array(
+      'title' => 'Blue State Digital API examples - bsdapi_examples/get_constituents', 
+      'page callback' => 'bsdapi_examples_get_constituents', 
+      
+      'access callback' => 'user_access', 
+      'access arguments' => array(
+          'access content' 
+      ), 
+      'type' => MENU_CALLBACK 
+  );
+  
+  return $items;
+}
+
+function bsdapi_examples(){
+  $links = array();
+  
+  $links[] = l('set_constituent_data', 'bsdapi_examples/set_constituent_data');
+  $links[] = l('get_constituents_by_id', 'bsdapi_examples/get_constituents_by_id/1');
+  $links[] = l('get_constituents', 'bsdapi_examples/get_constituents');
+  
+  $output = theme('item_list', $links, t('Actions'));
+  
+  return $output;
+}
+
+/**
+ * example of cons/get_constituents_by_id
+ */
+function bsdapi_examples_get_constituents_by_id($id){
+  module_load_include('inc', 'bsdapi', 'bsdapi.class');
+  
+  $obj = new BsdApi();
+  $result = $obj->request('cons/get_constituents_by_id', array(
+      'cons_ids' => $id, 
+      'bundles' => 'cons_addr' 
+  ));
+  
+  return bsdapi_example_const_table($result, 'filter: id = 1 - Change the id in the url for a different constituent');
+}
+
+/**
+ * example of cons/get_constituents
+ */
+function bsdapi_examples_get_constituents(){
+  module_load_include('inc', 'bsdapi', 'bsdapi.class');
+  
+  $obj = new BsdApi();
+  $result = $obj->request('cons/get_constituents', array(
+      'filter' => 'state_cd=(NY,MA,IA,NV,NH,SC)', 
+      'bundles' => 'cons_addr' 
+  ));
+  //print_r($result -> data);
+  return bsdapi_example_const_table($result, 'filter = state_cd=(NY,MA,IA,NV,NH,SC)');
+
+}
+
+function bsdapi_examples_set_constituent_data_form(){
+  
+  $form['firstname'] = array(
+      '#title' => t('the first name of the constituent'), 
+      '#type' => 'textfield', 
+      '#required' => TRUE 
+  );
+  
+  $form['lastname'] = array(
+      '#title' => t('the last name of the constituent'), 
+      '#type' => 'textfield', 
+      '#required' => TRUE 
+  );
+  
+  $form['email'] = array(
+      '#title' => t('the e-mail of the constituent'), 
+      '#type' => 'textfield', 
+      '#required' => TRUE 
+  );
+  
+  $form['submit'] = array(
+      '#type' => 'submit', 
+      '#value' => 'Submit' 
+  );
+  
+  return $form;
+}
+
+function bsdapi_examples_set_constituent_data_form_submit($form, &$form_state){
+  $firstname = $form_state['values']['firstname'];
+  $lastname = $form_state['values']['lastname'];
+  $email = $form_state['values']['email'];
+  
+  $post = '<?xml version="1.0" encoding="utf-8"?>
+<api>
+    <cons>
+       <firstname>' . $firstname . '</firstname>
+       <lastname>' . $lastname . '</lastname>
+       <is_banned>0</is_banned>
+        <create_dt>' . time() . '</create_dt>
+
+        <cons_email>
+            <email>' . $email . '</email>
+            <is_subscribed>0</is_subscribed>
+            <is_primary>1</is_primary>
+        </cons_email>
+
+    </cons>
+</api>
+  ';
+  
+  module_load_include('inc', 'bsdapi', 'bsdapi.class');
+  
+  $obj = new BsdApi();
+  $result = $obj->request('cons/set_constituent_data', array(), $post);
+  
+  if ($result->code == '200') {
+    $xml = simplexml_load_string($result->data);
+    $id = $xml->cons['id'];
+    $l = l('here', 'bsdapi_examples/get_constituents_by_id/' . $id);
+    $message = 'The constituent added successfully. Check it out ' . $l;
+    
+    drupal_set_message($message);
+  }
+  else {
+    drupal_set_message('Sorry, there was an error adding the constituent, error code -> ' . $result->code);
+  }
+
+}
+
+/**
+ * outputs the result of a "cons" request as a table
+ */
+function bsdapi_example_const_table($result, $caption = NULL){
+  $xml = simplexml_load_string($result->data);
+  //print_r($xml); 
+  $header = array(
+      'id', 
+      'modified date', 
+      'First name', 
+      'Last Name', 
+      'has account', 
+      'is banned', 
+      'addr1', 
+      'city', 
+      'state_cd', 
+      'zip', 
+      'country' 
+  );
+  $rows = array();
+  foreach ( $xml->cons as $record ) {
+    $rows[] = array(
+        $record['id'], 
+        format_date($record['modified_dt']), 
+        $record->firstname, 
+        $record->lastname, 
+        $record->is_banned, 
+        $record->has_account, 
+        $record->cons_addr->addr1, 
+        $record->cons_addr->city, 
+        $record->cons_addr->state_cd, 
+        $record->cons_addr->zip, 
+        $record->cons_addr->country 
+    );
+  }
+  
+  return theme_table($header, $rows, $attributes = array(), $caption = $caption);
+}
