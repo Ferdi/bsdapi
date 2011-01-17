@@ -1,0 +1,4 @@
+name = bsdapi user
+description = Integrate drupal users with bsd
+core = 6.x
+
