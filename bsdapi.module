@@ -17,3 +17,109 @@ function bsdapi_menu() {
  
   return $items;
 }
+
+
+// constituents
+
+/**
+ * Get constituents by id
+ * @param $cons_ids
+ *   Array of constituents ids
+ * @param array $bundles
+ *   Array of bundle names ('cons_addr', 'cons_phone', 'cons_email', 'cons_profile' etc. )
+ * @param unknown_type $filter
+ */
+function bsdapi_get_constituents_by_id($cons_ids, $bundles = array(), $filter= NULL){
+  module_load_include('inc', 'bsdapi', 'bsdapi.class');
+  
+  $obj = new BsdApi();
+  
+  $params = array();
+  $cons_ids = implode(',', $cons_ids);
+  $params['cons_ids'] = $cons_ids;
+  
+  if (count($boundles)){
+    $bundles = implode(',', $bundles);
+    $params['bundles'] = $bundles;
+  }
+  
+  if($filter){
+    $params['filter'] = filter;
+  }
+  
+  $result = $obj->request('cons/get_constituents_by_id', $params);
+  
+  return $result; 
+}
+
+/**
+ * Get constituents give some filters
+ * @param $filter
+ *   A filter string to apply
+ * @param array $bundles
+ *   Array of bundle names ('cons_addr', 'cons_phone', 'cons_email', 'cons_profile' etc. )
+ */
+function bsdapi_get_constituents($filter, $bundles = array()){
+  module_load_include('inc', 'bsdapi', 'bsdapi.class');
+  
+  $obj = new BsdApi();
+  
+  $params['filter'] = $filter;
+  
+  if (count($bundles)){
+    $bundles = implode(',', $bundles);
+    $params['bundles'] = $bundles;
+  }
+  
+  
+  $result = $obj->request('cons/get_constituents', $params);
+  
+  return $result; 
+}
+
+/**
+ * Takes one or more GUIDs (non-sequential, random, unique identifiers for constituents) 
+ * as a parameter and returns the matching constituent records.
+ * @param $guids
+ *   One or more (comma separated) GUIDs.
+ * @param array $bundles
+ *   Array of bundle names ('cons_addr', 'cons_phone', 'cons_email', 'cons_profile' etc. )
+ * @param $filter
+ *   The filter to apply to the resulting record
+ */
+function bsdapi_get_constituents_by_guid($guids, $bundles = array(), $filter = NULL){
+  module_load_include('inc', 'bsdapi', 'bsdapi.class');
+  
+  $obj = new BsdApi();
+  
+  $params = array();
+  $guids = implode(',', $guids);
+  $params['$guids'] = $cons_ids;
+  
+  if (count($boundles)){
+    $bundles = implode(',', $bundles);
+    $params['bundles'] = $bundles;
+  }
+  
+  if($filter){
+    $params['filter'] = filter;
+  }
+  
+  $result = $obj->request('cons/get_constituents_by_guid', $params);
+  
+  return $result; 
+}
+
+/**
+ * allows creating or updating constituent records in BSD's system for one or more constituents
+ * @param $post
+ *   XML string describing the constituent
+ */
+function bsdapi_set_constituent_data($post){
+  module_load_include('inc', 'bsdapi', 'bsdapi.class');
+  
+  $obj = new BsdApi();
+  $result = $obj->request('cons/set_constituent_data', array(), $post);
+  
+  return $result; 
+}

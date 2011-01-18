@@ -75,14 +75,8 @@ function bsdapi_examples(){
  * example of cons/get_constituents_by_id
  */
 function bsdapi_examples_get_constituents_by_id($id){
-  module_load_include('inc', 'bsdapi', 'bsdapi.class');
-  
-  $obj = new BsdApi();
-  $result = $obj->request('cons/get_constituents_by_id', array(
-      'cons_ids' => $id, 
-      'bundles' => 'cons_addr' 
-  ));
-  
+
+  $result = bsdapi_get_constituents_by_id(array($id), $bundles = array('cons_addr'));  
   return bsdapi_example_const_table($result, 'filter: id = 1 - Change the id in the url for a different constituent');
 }
 
@@ -90,16 +84,11 @@ function bsdapi_examples_get_constituents_by_id($id){
  * example of cons/get_constituents
  */
 function bsdapi_examples_get_constituents(){
-  module_load_include('inc', 'bsdapi', 'bsdapi.class');
+  $filter = 'state_cd=(NY,MA,IA,NV,NH,SC)';
+  $bundles = array('cons_addr');
+  $result = bsdapi_get_constituents($filter, $bundles);
   
-  $obj = new BsdApi();
-  $result = $obj->request('cons/get_constituents', array(
-      'filter' => 'state_cd=(NY,MA,IA,NV,NH,SC)', 
-      'bundles' => 'cons_addr' 
-  ));
-  //print_r($result -> data);
   return bsdapi_example_const_table($result, 'filter = state_cd=(NY,MA,IA,NV,NH,SC)');
-
 }
 
 function bsdapi_examples_set_constituent_data_form(){
@@ -153,10 +142,7 @@ function bsdapi_examples_set_constituent_data_form_submit($form, &$form_state){
 </api>
   ';
   
-  module_load_include('inc', 'bsdapi', 'bsdapi.class');
-  
-  $obj = new BsdApi();
-  $result = $obj->request('cons/set_constituent_data', array(), $post);
+  $result = bsdapi_set_constituent_data($post);
   
   if ($result->code == '200') {
     $xml = simplexml_load_string($result->data);
