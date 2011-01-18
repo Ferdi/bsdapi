@@ -1,3 +1,98 @@
 <?php
 
+/**
+ * Implementation of hook_user
+ */
+function bsdapiuser_user($op, &$edit, &$user, $category = NULL){
+  switch ($op) {
+    case 'register' :
+      return bsdapiuser_extra_fields();
+    case 'insert' :
+      bsdapiuser_bsd_add($edit);
+      break;
+  }
+}
 
+
+/**
+ * Add user to bsd using bsdapi 
+ */
+function bsdapiuser_bsd_add($user){
+  $post = bsdapiuser_constituent_xml($user);
+  $result = bsdapi_set_constituent_data($post);
+  if ($result->code == '200') {
+    $xml = simplexml_load_string($result->data);
+    $id = $xml->cons['id'];
+    $l = l('here', 'bsdapi_examples/get_constituents_by_id/' . $id);
+    $message = 'The constituent added successfully. Check it out ' . $l;
+    
+    drupal_set_message($message);
+  }
+  else {
+    drupal_set_message('Sorry, there was an error adding the constituent, error code -> ' . $result->code);
+  }
+
+}
+
+/**
+ * helper function to construct xml $post
+ */
+function bsdapiuser_constituent_xml($edit){
+  $firstname = $edit['firstname'];
+  $lastname = $edit['lastname'];
+  $zip = $edit['zip'];
+  $email = $edit['mail']; 
+  $post = '<?xml version="1.0" encoding="utf-8"?>
+    <api>
+      <cons>';
+  if ($firstname) {
+    $post .= '<firstname>' . $firstname . '</firstname>';
+  }
+  if ($lastname) {
+    $post .= '<lastname>' . $lastname . '</lastname>';
+  }
+  $post .= '
+       <is_banned>0</is_banned>
+        <create_dt>' . time() . '</create_dt>
+
+        <cons_email>
+            <email>' . $email . '</email>
+            <is_subscribed>0</is_subscribed>
+            <is_primary>1</is_primary>
+        </cons_email>';
+  if ($zip) {
+    $post .= '
+    <cons_addr>
+        <zip>' . $zip . '</zip>
+   </cons_addr>';
+  }
+  
+  $post .= '
+    </cons>
+    </api>';
+  
+  return $post;
+}
+
+
+/**
+ * Extra form elements to be added to the user's registration form
+ */
+function bsdapiuser_extra_fields(){
+  $form['firstname'] = array(
+      '#title' => t('First name'), 
+      '#type' => 'textfield' 
+  );
+  
+  $form['lastname'] = array(
+      '#title' => t('Last name'), 
+      '#type' => 'textfield' 
+  );
+  
+  $form['zip'] = array(
+      '#title' => t('zip'), 
+      '#type' => 'textfield' 
+  );
+  
+  return $form;
+}

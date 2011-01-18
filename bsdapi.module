@@ -38,7 +38,7 @@ function bsdapi_get_constituents_by_id($cons_ids, $bundles = array(), $filter= N
   $cons_ids = implode(',', $cons_ids);
   $params['cons_ids'] = $cons_ids;
   
-  if (count($boundles)){
+  if (count($bundles)){
     $bundles = implode(',', $bundles);
     $params['bundles'] = $bundles;
   }
